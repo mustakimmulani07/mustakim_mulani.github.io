@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth bg-[#030305]">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mustakim Mulani | Cloud Security Architect</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Space Grotesk', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    },
+                    colors: {
+                        cyber: {
+                            bg: '#030305',
+                            cyan: '#00f3ff',
+                            purple: '#b900ff',
+                            green: '#00ff66',
+                            dark: '#0a0a0f',
+                            border: '#1f1f2e'
+                        }
+                    },
+                    backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Base Resets & Hide Native Cursor */
+        * { cursor: none !important; margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background-color: theme('colors.cyber.bg'); 
+            color: #e2e8f0; 
+            overflow-x: hidden; 
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Custom Magnetic Cursor */
+        .cursor-dot, .cursor-outline {
+            position: fixed;
+            top: 0; left: 0;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            z-index: 9999;
+            pointer-events: none;
+            mix-blend-mode: difference;
+        }
+        .cursor-dot {
+            width: 8px; height: 8px;
+            background-color: theme('colors.cyber.green');
+            transition: transform 0.2s ease-out;
+        }
+        .cursor-outline {
+            width: 40px; height: 40px;
+            border: 1.5px solid theme('colors.cyber.cyan');
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+            transition: width 0.3s ease-out, height 0.3s ease-out, background-color 0.3s ease-out, border-color 0.3s;
+        }
+        .cursor-hover {
+            width: 70px; height: 70px;
+            background-color: rgba(0, 243, 255, 0.1);
+            border-color: theme('colors.cyber.green');
+            box-shadow: 0 0 25px rgba(0, 255, 102, 0.4);
+        }
+
+        /* 3D WebGL Background */
+        #webgl-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+        }
+        /* Grain overlay for Cyberpunk texture */
+        .noise-overlay {
+            position: fixed; inset: 0; z-index: -1;
+            background-image: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
+            opacity: 0.04; mix-blend-mode: overlay; pointer-events: none;
+        }
+
+        /* Preloader */
+        #preloader {
+            position: fixed; inset: 0; z-index: 9998;
+            background-color: #030305;
+            display: flex; flex-direction: column; justify-content: center;
+            padding: 2rem;
+        }
+        .terminal-text {
+            text-shadow: 0 0 10px rgba(0, 255, 102, 0.5);
+        }
+        .terminal-cursor::after {
+            content: '█'; animation: blink 0.8s step-start infinite;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* Spotlight Hero Text - Math Driven Alignment */
+        .spotlight-wrapper {
+            position: relative;
+            display: flex; justify-content: center; align-items: center;
+            width: 100%;
+        }
+        .text-dim {
+            color: #111116; /* Near black, barely visible */
+            user-select: none;
+            -webkit-text-stroke: 1px rgba(255, 255, 255, 0.03);
+        }
+        .text-bright {
+            position: absolute;
+            inset: 0; 
+            display: flex; justify-content: center; align-items: center;
+            background: linear-gradient(to right, theme('colors.cyber.cyan'), theme('colors.cyber.purple'));
+            -webkit-background-clip: text; color: transparent;
+            /* The Magic Mask */
+            -webkit-mask-image: radial-gradient(circle 180px at var(--mouse-x, 50%) var(--mouse-y, 50%), black 0%, transparent 100%);
+            mask-image: radial-gradient(circle 180px at var(--mouse-x, 50%) var(--mouse-y, 50%), black 0%, transparent 100%);
+            pointer-events: none; user-select: none;
+            filter: drop-shadow(0 0 20px rgba(0, 243, 255, 0.4));
+        }
+
+        /* Glassmorphism & Cyber Elements */
+        .cyber-glass {
+            background: rgba(10, 10, 15, 0.3);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-top: 1px solid rgba(0, 243, 255, 0.3);
+            border-bottom: 1px solid rgba(185, 0, 255, 0.3);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+        }
+        .terminal-window {
+            border-radius: 12px; overflow: hidden;
+            border: 1px solid theme('colors.cyber.border');
+            background: rgba(5, 5, 8, 0.7);
+        }
+        .terminal-header {
+            background: #111118; padding: 10px 15px;
+            display: flex; gap: 8px; align-items: center;
+            border-bottom: 1px solid theme('colors.cyber.border');
+        }
+        .mac-btn { width: 12px; height: 12px; border-radius: 50%; }
+
+        /* Advanced 3D Tilt Cards */
+        .tilt-card {
+            transform-style: preserve-3d;
+            perspective: 1500px;
+            will-change: transform;
+        }
+        .tilt-card-inner {
+            transform: translateZ(60px); /* Deep parallax */
+            will-change: transform;
+        }
+        .tilt-card::before {
+            content: ''; position: absolute; inset: 0;
+            border-radius: inherit;
+            background: radial-gradient(800px circle at var(--mouse-x) var(--mouse-y), rgba(255, 255, 255, 0.06), transparent 40%);
+            z-index: 3; pointer-events: none; opacity: 0; transition: opacity 0.4s;
+        }
+        .tilt-card:hover::before { opacity: 1; }
+
+        /* Glow Progress Bars */
+        .progress-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 99px; overflow: hidden; height: 12px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        .progress-fill {
+            height: 100%; width: 0%;
+            border-radius: 99px;
+            box-shadow: 0 0 15px currentColor;
+            position: relative;
+        }
+        .progress-fill::after {
+            content: ''; position: absolute; top: 0; right: 0; bottom: 0; left: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+        /* Lenis Required Config */
+        html.lenis { height: auto; }
+        .lenis.lenis-smooth { scroll-behavior: auto !important; }
+        .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+        .lenis.lenis-stopped { overflow: hidden; }
+    </style>
+</head>
+<body class="antialiased selection:bg-cyber-cyan selection:text-black">
+
+    <div class="noise-overlay"></div>
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+
+    <!-- Matrix Terminal Preloader -->
+    <div id="preloader" class="font-mono text-cyber-green text-sm md:text-xl lg:text-2xl px-8 md:px-24">
+        <div id="preloader-text" class="terminal-text terminal-cursor font-bold"></div>
+    </div>
+
+    <!-- ThreeJS WebGL Canvas -->
+    <canvas id="webgl-canvas"></canvas>
+
+    <div id="smooth-wrapper">
+        
+        <nav class="fixed top-0 w-full p-6 md:px-12 z-40 mix-blend-difference flex justify-between items-center pointer-events-none">
+            <div class="font-mono text-cyber-cyan text-xl md:text-2xl font-black pointer-events-auto magnetic">
+                <span class="text-cyber-purple">~/</span>mustakim
+            </div>
+            <div class="flex gap-6 pointer-events-auto">
+                <a href="#about" class="font-mono text-xs md:text-sm text-gray-400 hover:text-cyber-green transition-colors magnetic">01.ABOUT</a>
+                <a href="#skills" class="font-mono text-xs md:text-sm text-gray-400 hover:text-cyber-cyan transition-colors magnetic">02.SKILLS</a>
+                <a href="#projects" class="font-mono text-xs md:text-sm text-gray-400 hover:text-cyber-purple transition-colors magnetic">03.MISSIONS</a>
+            </div>
+        </nav>
+
+        <main class="relative z-10 flex flex-col items-center overflow-hidden">
+            
+            <section id="hero" class="min-h-screen w-full flex flex-col items-center justify-center px-4 relative pt-10">
+                <div class="w-full max-w-[90rem] mx-auto flex flex-col items-center z-10">
+                    
+                    <div class="spotlight-wrapper text-center magnetic" id="hero-spotlight">
+                        <h1 class="text-dim text-[12vw] sm:text-[10vw] md:text-[8vw] lg:text-[120px] font-black uppercase tracking-tighter leading-[0.85] m-0">
+                            Welcome To<br>Mustakim's<br>Portfolio
+                        </h1>
+                        <!-- Aria-hidden bright duplicate for perfect alignment -->
+                        <h1 class="text-bright text-[12vw] sm:text-[10vw] md:text-[8vw] lg:text-[120px] font-black uppercase tracking-tighter leading-[0.85] m-0" aria-hidden="true">
+                            Welcome To<br>Mustakim's<br>Portfolio
+                        </h1>
+                    </div>
+
+                    <div class="mt-16 text-center hero-anim opacity-0 translate-y-12">
+                        <div class="inline-block border border-cyber-cyan/30 bg-cyber-cyan/5 px-6 py-3 rounded-full backdrop-blur-sm mb-4">
+                            <p class="font-mono text-cyber-cyan md:text-xl text-lg tracking-widest uppercase font-bold text-shadow">
+                                <i class="fa-solid fa-satellite-dish mr-2 animate-pulse"></i> Aspiring Cloud Application Security Architect
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="absolute bottom-10 flex flex-col items-center hero-anim opacity-0 magnetic">
+                        <span class="font-mono text-[10px] tracking-[0.4em] text-cyber-green mb-3 uppercase">Initiate Scroll Sequence</span>
+                        <div class="w-[2px] h-20 bg-gradient-to-b from-cyber-green via-cyber-cyan to-transparent animate-[pulse_2s_ease-in-out_infinite]"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="about" class="py-32 px-6 w-full relative z-10 flex justify-center">
+                <div class="container max-w-5xl">
+                    <div class="terminal-window cyber-glass about-trigger opacity-0 translate-y-24">
+                        <div class="terminal-header">
+                            <div class="mac-btn bg-[#ff5f56] shadow-[0_0_8px_#ff5f56]"></div>
+                            <div class="mac-btn bg-[#ffbd2e] shadow-[0_0_8px_#ffbd2e]"></div>
+                            <div class="mac-btn bg-[#27c93f] shadow-[0_0_8px_#27c93f]"></div>
+                            <span class="ml-4 font-mono text-xs text-gray-500">root@mustakim: ~/sys_info</span>
+                        </div>
+                       <div class="p-8 md:p-14 font-mono text-sm md:text-lg text-gray-300 leading-relaxed">
+                            <p class="mb-8"><span class="text-cyber-green font-bold text-xl drop-shadow-[0_0_8px_rgba(0,255,102,0.5)]">cat whoami.txt</span></p>
+                            
+                            <!-- EXACT CONTEXT AS REQUESTED -->
+                            <p class="mb-6 pl-5 border-l-2 border-cyber-cyan/50 type-reveal text-gray-200">
+                                I am <span class="text-cyber-cyan font-bold">Mustakim Shiraj Mulani</span> from Sangli. I am currently pursuing my Bachelor of Computer Applications (BCA) at <span class="text-white font-bold">Bharati Vidyapeeth IMRDA, Sangli</span>.
+                            </p>
+                            <p class="mb-6 pl-5 border-l-2 border-cyber-purple/50 type-reveal text-gray-200" style="transition-delay: 0.2s;">
+                                I am deeply passionate about cybersecurity, ethical hacking, and web application penetration testing. 
+                            </p>
+                            <p class="mb-6 pl-5 border-l-2 border-cyber-green/50 type-reveal text-gray-200" style="transition-delay: 0.4s;">
+                                I constantly strive to explore system vulnerabilities, secure architectures, and master tools in Linux environments.
+                            </p>
+                            
+                            <p class="mt-10 text-cyber-cyan animate-pulse">_ execution complete.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="skills" class="py-32 px-6 w-full relative z-10 bg-black/40 border-y border-cyber-border">
+                <div class="container mx-auto max-w-6xl">
+                    <div class="mb-20 text-center section-header opacity-0">
+                        <h2 class="font-sans font-black text-5xl md:text-7xl text-white uppercase tracking-tighter">
+                            Technical <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyber-cyan to-cyber-purple">Arsenal</span>
+                        </h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10 max-w-5xl mx-auto" id="skills-container">
+                        
+                        <!-- Skill 1 -->
+                        <div class="skill-item">
+                            <div class="flex justify-between font-mono text-sm mb-3">
+                                <span class="text-white flex items-center gap-2"><i class="fa-brands fa-python text-cyber-cyan"></i> Python</span>
+                                <span class="text-cyber-cyan">90%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-fill bg-cyber-cyan text-cyber-cyan" data-width="90%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Skill 2 -->
+                        <div class="skill-item">
+                            <div class="flex justify-between font-mono text-sm mb-3">
+                                <span class="text-white flex items-center gap-2"><i class="fa-solid fa-code text-cyber-purple"></i> C/C++</span>
+                                <span class="text-cyber-purple">98%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-fill bg-cyber-purple text-cyber-purple" data-width="85%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Skill 3 -->
+                        <div class="skill-item">
+                            <div class="flex justify-between font-mono text-sm mb-3">
+                                <span class="text-white flex items-center gap-2"><i class="fa-brands fa-java text-[#f89820]"></i> Java</span>
+                                <span class="text-[#f89820]">80%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-fill bg-[#f89820] text-[#f89820]" data-width="80%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Skill 4 -->
+                        <div class="skill-item">
+                            <div class="flex justify-between font-mono text-sm mb-3">
+                                <span class="text-white flex items-center gap-2"><i class="fa-brands fa-linux text-cyber-green"></i> Linux (Ubuntu/Kali)</span>
+                                <span class="text-cyber-green">99%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-fill bg-cyber-green text-cyber-green" data-width="95%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Skill 5 -->
+                        <div class="skill-item">
+                            <div class="flex justify-between font-mono text-sm mb-3">
+                                <span class="text-white flex items-center gap-2"><i class="fa-solid fa-skull-crossbones text-[#ff003c]"></i>html/css</span>
+                                <span class="text-[#ff003c]">92%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-fill bg-[#ff003c] text-[#ff003c]" data-width="92%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Skill 6 -->
+                        <div class="skill-item">
+                            <div class="flex justify-between font-mono text-sm mb-3">
+                                <span class="text-white flex items-center gap-2"><i class="fa-solid fa-database text-cyber-cyan"></i> SQL / DB Security</span>
+                                <span class="text-cyber-cyan">88%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-fill bg-cyber-cyan text-cyber-cyan" data-width="88%"></div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <section id="projects" class="py-40 px-6 w-full relative z-10">
+                <div class="container mx-auto max-w-7xl">
+                    <div class="mb-24 section-header opacity-0 flex items-center gap-6">
+                        <div class="h-[2px] flex-1 bg-gradient-to-r from-transparent to-cyber-purple"></div>
+                        <h2 class="font-sans font-black text-4xl md:text-6xl text-white uppercase tracking-tighter">
+                            Active <span class="text-cyber-purple">Missions</span>
+                        </h2>
+                        <div class="h-[2px] flex-1 bg-gradient-to-l from-transparent to-cyber-purple"></div>
+                    </div>
+
+                    <div class="flex flex-col gap-32">
+                        
+                        <!-- Project 1 -->
+                        <div class="tilt-card cyber-glass rounded-2xl p-1 md:w-5/6 mx-auto group magnetic">
+                            <div class="tilt-card-inner bg-cyber-dark/80 rounded-xl p-8 md:p-14 border border-white/5 flex flex-col md:flex-row gap-8 items-center h-full relative overflow-hidden">
+                                <!-- Background accent -->
+                                <div class="absolute -right-20 -top-20 w-64 h-64 bg-cyber-cyan blur-[120px] opacity-20 pointer-events-none"></div>
+                                
+                                <div class="md:w-1/3 flex justify-center">
+                                    <div class="w-32 h-32 md:w-48 md:h-48 rounded-full border-2 border-cyber-cyan/50 flex items-center justify-center bg-black/50 shadow-[0_0_30px_rgba(0,243,255,0.2)] group-hover:scale-110 transition-transform duration-500">
+                                        <i class="fa-solid fa-shield-halved text-5xl md:text-7xl text-cyber-cyan"></i>
+                                    </div>
+                                </div>
+                                <div class="md:w-2/3">
+                                    <span class="font-mono text-xs text-cyber-cyan px-3 py-1 rounded-full border border-cyber-cyan/30 bg-cyber-cyan/10 mb-4 inline-block">Virtual Experience</span>
+                                    <h3 class="text-3xl md:text-5xl font-black text-white mb-6 uppercase tracking-tight">Mastercard Cybersecurity</h3>
+                                    <p class="text-gray-400 font-mono text-sm md:text-base leading-relaxed mb-8">
+                                        Executed comprehensive security architecture analysis. Simulated real-world cyber threats, mitigating vulnerabilities within complex financial infrastructures, and designed strategic defenses for cloud applications.
+                                    </p>
+                                    <div class="flex flex-wrap gap-3">
+                                        <span class="text-xs font-mono text-cyber-bg bg-cyber-cyan px-3 py-1.5 rounded font-bold">Threat Modeling</span>
+                                        <span class="text-xs font-mono text-cyber-bg bg-cyber-cyan px-3 py-1.5 rounded font-bold">Architecture Defense</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Project 2 -->
+                        <div class="tilt-card cyber-glass rounded-2xl p-1 md:w-5/6 mx-auto group magnetic">
+                            <div class="tilt-card-inner bg-cyber-dark/80 rounded-xl p-8 md:p-14 border border-white/5 flex flex-col md:flex-row-reverse gap-8 items-center h-full relative overflow-hidden">
+                                <div class="absolute -left-20 -bottom-20 w-64 h-64 bg-[#ff003c] blur-[120px] opacity-20 pointer-events-none"></div>
+                                
+                                <div class="md:w-1/3 flex justify-center">
+                                    <div class="w-32 h-32 md:w-48 md:h-48 rounded-full border-2 border-[#ff003c]/50 flex items-center justify-center bg-black/50 shadow-[0_0_30px_rgba(255,0,60,0.2)] group-hover:scale-110 transition-transform duration-500">
+                                        <i class="fa-solid fa-building-columns text-5xl md:text-7xl text-[#ff003c]"></i>
+                                    </div>
+                                </div>
+                                <div class="md:w-2/3 text-left md:text-right">
+                                    <span class="font-mono text-xs text-[#ff003c] px-3 py-1 rounded-full border border-[#ff003c]/30 bg-[#ff003c]/10 mb-4 inline-block">Virtual Experience</span>
+                                    <h3 class="text-3xl md:text-5xl font-black text-white mb-6 uppercase tracking-tight">Bank of America</h3>
+                                    <p class="text-gray-400 font-mono text-sm md:text-base leading-relaxed mb-8">
+                                        Engaged deeply in the Bank of America Engineering program. Focused on implementing secure coding practices across the software development lifecycle, optimizing enterprise-level application performance and security workflows.
+                                    </p>
+                                    <div class="flex flex-wrap gap-3 justify-start md:justify-end">
+                                        <span class="text-xs font-mono text-white bg-[#ff003c]/80 px-3 py-1.5 rounded font-bold">Secure Coding</span>
+                                        <span class="text-xs font-mono text-white bg-[#ff003c]/80 px-3 py-1.5 rounded font-bold">App Optimization</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Project 3 -->
+                        <div class="tilt-card cyber-glass rounded-2xl p-1 md:w-5/6 mx-auto group magnetic">
+                            <div class="tilt-card-inner bg-cyber-dark/80 rounded-xl p-8 md:p-14 border border-white/5 flex flex-col md:flex-row gap-8 items-center h-full relative overflow-hidden">
+                                <div class="absolute -right-20 top-20 w-64 h-64 bg-cyber-purple blur-[120px] opacity-20 pointer-events-none"></div>
+                                
+                                <div class="md:w-1/3 flex justify-center">
+                                    <div class="w-32 h-32 md:w-48 md:h-48 rounded-full border-2 border-cyber-purple/50 flex items-center justify-center bg-black/50 shadow-[0_0_30px_rgba(185,0,255,0.2)] group-hover:scale-110 transition-transform duration-500">
+                                        <i class="fa-solid fa-laptop-code text-5xl md:text-7xl text-cyber-purple"></i>
+                                    </div>
+                                </div>
+                                <div class="md:w-2/3">
+                                    <span class="font-mono text-xs text-cyber-purple px-3 py-1 rounded-full border border-cyber-purple/30 bg-cyber-purple/10 mb-4 inline-block">Software Engineering</span>
+                                    <h3 class="text-3xl md:text-5xl font-black text-white mb-6 uppercase tracking-tight">CommBank Experience</h3>
+                                    <p class="text-gray-400 font-mono text-sm md:text-base leading-relaxed mb-8">
+                                        Completed the Commonwealth Bank Software Engineering virtual module. Engineered robust backend solutions, focusing on data integrity, API security, and scalable infrastructure deployment methodologies.
+                                    </p>
+                                    <div class="flex flex-wrap gap-3">
+                                        <span class="text-xs font-mono text-white bg-cyber-purple px-3 py-1.5 rounded font-bold">API Security</span>
+                                        <span class="text-xs font-mono text-white bg-cyber-purple px-3 py-1.5 rounded font-bold">Backend Eng</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <footer class="py-24 px-6 bg-black relative z-10 border-t border-white/10 overflow-hidden">
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[1px] bg-gradient-to-r from-transparent via-cyber-green to-transparent opacity-50"></div>
+            <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-3/4 h-64 bg-cyber-green rounded-full blur-[150px] opacity-10 pointer-events-none"></div>
+            
+            <div class="container mx-auto max-w-4xl flex flex-col items-center justify-center text-center">
+                
+                <h2 class="font-sans font-black text-6xl md:text-8xl text-white mb-12 tracking-tighter mix-blend-difference">
+                    INITIATE <br><span class="text-transparent bg-clip-text bg-gradient-to-r from-cyber-cyan to-cyber-green">HANDSHAKE</span>
+                </h2>
+
+                <a href="mailto:mustakimmulani07@gmail.com" class="magnetic group relative font-mono text-xl md:text-3xl text-gray-300 hover:text-white transition-colors mb-16 p-4">
+                    <span class="relative z-10 drop-shadow-[0_0_10px_rgba(0,255,102,0.8)]"><i class="fa-solid fa-terminal mr-4 text-cyber-green"></i>mustakimmulani07@gmail.com</span>
+                    <span class="absolute bottom-0 left-0 w-0 h-[2px] bg-cyber-green transition-all duration-500 group-hover:w-full shadow-[0_0_10px_#00ff66]"></span>
+                </a>
+
+                <div class="flex flex-wrap justify-center gap-12 font-mono text-base md:text-lg text-gray-400">
+                    <a href="#" class="magnetic hover:text-cyber-cyan hover:drop-shadow-[0_0_8px_#00f3ff] transition-all flex items-center gap-3">
+                        <i class="fa-brands fa-github text-2xl"></i> root_mustakim
+                    </a>
+                    <a href="#" class="magnetic hover:text-cyber-purple hover:drop-shadow-[0_0_8px_#b900ff] transition-all flex items-center gap-3">
+                        <i class="fa-brands fa-linkedin text-2xl"></i> mustakim-mulani
+                    </a>
+                </div>
+                
+                <div class="mt-24 font-mono text-sm text-gray-600 flex items-center justify-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-cyber-green animate-pulse shadow-[0_0_8px_#00ff66]"></div>
+                    <p>CONNECTION SECURE // &copy; <span id="year"></span> MUSTAKIM MULANI</p>
+                </div>
+            </div>
+        </footer>
+
+    </div>
+
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        // --- 1. Custom Magnetic Cursor ---
+        const cursorDot = document.querySelector('.cursor-dot');
+        const cursorOutline = document.querySelector('.cursor-outline');
+        
+        let mouseX = window.innerWidth / 2;
+        let mouseY = window.innerHeight / 2;
+        let outlineX = mouseX;
+        let outlineY = mouseY;
+        
+        // GSAP QuickTo for the dot (instant tracking)
+        const moveDotX = gsap.quickTo(cursorDot, "left", {duration: 0.05, ease: "power3"});
+        const moveDotY = gsap.quickTo(cursorDot, "top", {duration: 0.05, ease: "power3"});
+
+        window.addEventListener("mousemove", (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            moveDotX(mouseX);
+            moveDotY(mouseY);
+        });
+
+        // Custom lerp loop for the outline to allow magnetic snapping
+        let isHovering = false;
+        let magneticTarget = {x: 0, y: 0, width: 0, height: 0};
+
+        function renderCursor() {
+            if (isHovering) {
+                // Snap outline to the center of the magnetic element
+                outlineX += (magneticTarget.x - outlineX) * 0.15;
+                outlineY += (magneticTarget.y - outlineY) * 0.15;
+            } else {
+                // Follow mouse smoothly
+                outlineX += (mouseX - outlineX) * 0.15;
+                outlineY += (mouseY - outlineY) * 0.15;
+            }
+            cursorOutline.style.transform = `translate(-50%, -50%) translate3d(${outlineX}px, ${outlineY}px, 0)`;
+            requestAnimationFrame(renderCursor);
+        }
+        requestAnimationFrame(renderCursor);
+
+        // Magnetic Hover Logic
+        const magnetics = document.querySelectorAll('.magnetic');
+        magnetics.forEach(el => {
+            el.addEventListener('mouseenter', (e) => {
+                isHovering = true;
+                cursorOutline.classList.add('cursor-hover');
+                const rect = el.getBoundingClientRect();
+                magneticTarget.x = rect.left + rect.width / 2;
+                magneticTarget.y = rect.top + rect.height / 2;
+            });
+            el.addEventListener('mousemove', (e) => {
+                const rect = el.getBoundingClientRect();
+                magneticTarget.x = rect.left + rect.width / 2 + (e.clientX - (rect.left + rect.width/2)) * 0.2; // Slight pull
+                magneticTarget.y = rect.top + rect.height / 2 + (e.clientY - (rect.top + rect.height/2)) * 0.2;
+            });
+            el.addEventListener('mouseleave', () => {
+                isHovering = false;
+                cursorOutline.classList.remove('cursor-hover');
+            });
+        });
+
+        // --- 2. Lenis Smooth Scrolling ---
+        const lenis = new Lenis({
+            duration: 1.5,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), 
+            smooth: true,
+        });
+
+        function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
+
+        // --- 3. Terminal Preloader Boot Sequence ---
+        const preloaderLines = [
+            "root@mustakim:~# initiating secure shell...",
+            "[ OK ] Connection established.",
+            "root@mustakim:~# bypassing firewall...",
+            "[ OK ] Access Granted. Level 9 Clearance.",
+            "root@mustakim:~# decrypting portfolio payload...",
+            "Decryption Complete. Welcome."
+        ];
+        const preloaderEl = document.getElementById('preloader-text');
+        let lineIdx = 0;
+        let charIdx = 0;
+
+        function typeLine() {
+            if (lineIdx < preloaderLines.length) {
+                let currentText = preloaderLines[lineIdx];
+                if (charIdx < currentText.length) {
+                    preloaderEl.innerHTML += currentText.charAt(charIdx);
+                    charIdx++;
+                    setTimeout(typeLine, Math.random() * 20 + 10);
+                } else {
+                    preloaderEl.innerHTML += '<br><br>';
+                    lineIdx++;
+                    charIdx = 0;
+                    setTimeout(typeLine, 300); // Wait between lines
+                }
+            } else {
+                // Boot complete
+                setTimeout(() => {
+                    gsap.to("#preloader", {
+                        yPercent: -100,
+                        duration: 1.5,
+                        ease: "power4.inOut",
+                        onComplete: () => {
+                            document.getElementById('preloader').style.display = 'none';
+                            initHeroGSAP();
+                        }
+                    });
+                }, 800);
+            }
+        }
+        window.onload = typeLine;
+
+        // --- 4. Interactive 3D Cyber Globe / Node Network ---
+        const canvas = document.querySelector('#webgl-canvas');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x030305, 0.0015);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.z = 600;
+
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        // Create Sphere Particle System
+        const particleCount = 4000;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
+
+        const color1 = new THREE.Color(0x00f3ff); // Cyan
+        const color2 = new THREE.Color(0xb900ff); // Purple
+        const color3 = new THREE.Color(0x00ff66); // Green
+
+        const radius = 450;
+
+        for (let i = 0; i < particleCount; i++) {
+            // Math for points on a sphere
+            const phi = Math.acos(-1 + (2 * i) / particleCount);
+            const theta = Math.sqrt(particleCount * Math.PI) * phi;
+
+            // Add slight randomness to make it look like a data cloud rather than a solid ball
+            const r = radius + (Math.random() - 0.5) * 150;
+
+            positions[i * 3] = r * Math.cos(theta) * Math.sin(phi);
+            positions[i * 3 + 1] = r * Math.sin(theta) * Math.sin(phi);
+            positions[i * 3 + 2] = r * Math.cos(phi);
+
+            // Mix colors randomly
+            const rand = Math.random();
+            let mixedColor;
+            if(rand < 0.33) mixedColor = color1;
+            else if(rand < 0.66) mixedColor = color2;
+            else mixedColor = color3;
+
+            colors[i * 3] = mixedColor.r;
+            colors[i * 3 + 1] = mixedColor.g;
+            colors[i * 3 + 2] = mixedColor.b;
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        // Custom Shader Material for glowing dots
+        const material = new THREE.PointsMaterial({
+            size: 3,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true
+        });
+
+        const particles = new THREE.Points(geometry, material);
+        scene.add(particles);
+
+        // Interaction
+        let targetX = 0, targetY = 0;
+        window.addEventListener('mousemove', (e) => {
+            targetX = (e.clientX - window.innerWidth/2) * 0.001;
+            targetY = (e.clientY - window.innerHeight/2) * 0.001;
+        });
+
+        const clock = new THREE.Clock();
+        function animateThree() {
+            const time = clock.getElapsedTime();
+            
+            // Auto rotation
+            particles.rotation.y += 0.002;
+            particles.rotation.x += 0.001;
+
+            // Mouse parallax (smooth lerp)
+            camera.position.x += (targetX * 800 - camera.position.x) * 0.05;
+            camera.position.y += (-targetY * 800 - camera.position.y) * 0.05;
+            camera.lookAt(scene.position);
+
+            renderer.render(scene, camera);
+            requestAnimationFrame(animateThree);
+        }
+        animateThree();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- 5. Hero Spotlight Mask Alignment ---
+        const spotlightWrapper = document.getElementById('hero-spotlight');
+        spotlightWrapper.addEventListener('mousemove', (e) => {
+            const rect = spotlightWrapper.getBoundingClientRect();
+            // Get exact coordinates relative to the wrapper
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            spotlightWrapper.style.setProperty('--mouse-x', `${x}px`);
+            spotlightWrapper.style.setProperty('--mouse-y', `${y}px`);
+        });
+        spotlightWrapper.addEventListener('mouseleave', () => {
+            spotlightWrapper.style.setProperty('--mouse-x', `-500px`);
+            spotlightWrapper.style.setProperty('--mouse-y', `-500px`);
+        });
+
+        // --- 6. Advanced 3D Tilt for Project Cards ---
+        const tiltCards = document.querySelectorAll('.tilt-card');
+        tiltCards.forEach(card => {
+            const inner = card.querySelector('.tilt-card-inner');
+            
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left; 
+                const y = e.clientY - rect.top;  
+                
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                // Calculate rotation (intensity multiplier)
+                const rotateX = ((y - centerY) / centerY) * -10;
+                const rotateY = ((x - centerX) / centerX) * 10;
+                
+                // Apply rotation to card, and reverse translation to inner content for deep 3D
+                card.style.transform = `perspective(1500px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+                inner.style.transform = `translateZ(50px) translateX(${rotateY * -1}px) translateY(${rotateX}px)`;
+                
+                // Update radial gradient pseudo-element for lighting
+                card.style.setProperty('--mouse-x', `${x}px`);
+                card.style.setProperty('--mouse-y', `${y}px`);
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = `perspective(1500px) rotateX(0deg) rotateY(0deg)`;
+                card.style.transition = 'transform 0.5s ease-out';
+                inner.style.transform = `translateZ(0px) translateX(0px) translateY(0px)`;
+                inner.style.transition = 'transform 0.5s ease-out';
+                
+                // Remove transition after reset so hover is instant
+                setTimeout(() => {
+                    card.style.transition = '';
+                    inner.style.transition = '';
+                }, 500);
+            });
+        });
+
+        // --- 7. GSAP ScrollTrigger Configurations ---
+        gsap.registerPlugin(ScrollTrigger);
+        
+        // Sync Lenis and ScrollTrigger
+        lenis.on('scroll', ScrollTrigger.update);
+        gsap.ticker.add((time)=>{ lenis.raf(time * 1000) });
+        gsap.ticker.lagSmoothing(0, 0);
+
+        function initHeroGSAP() {
+            gsap.to(".hero-anim", {
+                y: 0, opacity: 1, duration: 1.5, stagger: 0.3, ease: "power4.out"
+            });
+        }
+
+        // About Section Terminal reveal
+        gsap.to(".about-trigger", {
+            scrollTrigger: {
+                trigger: "#about",
+                start: "top 80%",
+                end: "center center",
+                scrub: 1
+            },
+            y: 0, opacity: 1, ease: "power2.out"
+        });
+
+        // Section Headers
+        gsap.utils.toArray('.section-header').forEach(header => {
+            gsap.to(header, {
+                scrollTrigger: {
+                    trigger: header,
+                    start: "top 85%",
+                    end: "top 50%",
+                    scrub: 1
+                },
+                opacity: 1, scale: 1, ease: "power2.out"
+            });
+        });
+
+        // Skill Bars Fill Animation
+        gsap.utils.toArray('.skill-item').forEach((item, i) => {
+            const fill = item.querySelector('.progress-fill');
+            const targetWidth = fill.getAttribute('data-width');
+            
+            gsap.to(fill, {
+                scrollTrigger: {
+                    trigger: "#skills-container",
+                    start: "top 80%",
+                },
+                width: targetWidth,
+                duration: 1.5,
+                delay: i * 0.1,
+                ease: "power4.out"
+            });
+        });
+
+        // Project Cards Parallax Scroll
+        gsap.utils.toArray('.tilt-card').forEach((card, i) => {
+            // Alternating entry directions
+            const xOffset = i % 2 === 0 ? -100 : 100;
+            
+            gsap.from(card, {
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top 95%",
+                    end: "top 40%",
+                    scrub: 1
+                },
+                y: 150,
+                x: xOffset,
+                opacity: 0,
+                rotationZ: i % 2 === 0 ? -5 : 5,
+                scale: 0.9,
+                ease: "power2.out"
+            });
+        });
+
+    </script>
+</body>
+</html>
